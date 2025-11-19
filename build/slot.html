@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MEGA CASINO RP - Slot & Judi Bola (Fiktif)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#040014; --bg2:#0b0028; --neon:#ff00d4; --accent:#00ffd5;
+    --panel: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:'Poppins',sans-serif;
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    padding:20px;
+  }
+  header{display:flex;gap:20px;align-items:center;justify-content:space-between}
+  h1{margin:0;font-size:24px;text-shadow:0 0 12px var(--neon)}
+  .balance{
+    background:var(--panel);
+    padding:10px 16px;border-radius:12px;
+    box-shadow:0 0 20px rgba(0,0,0,0.6);
+    text-align:right;
+  }
+  .balance .title{font-size:12px;opacity:0.8}
+  .balance .amt{font-size:20px;color:var(--accent);font-weight:700}
+
+  .container{display:grid;grid-template-columns: 1fr 420px;gap:20px;margin-top:20px}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px;border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  .left .section{margin-bottom:18px}
+  .title{font-weight:700;color:#fff;margin-bottom:10px;font-size:16px;text-shadow:0 0 8px rgba(0,255,234,0.08)}
+  input[type="number"], select, .textinput{
+    width:100%;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,0.03);color:#fff;font-size:14px;margin-bottom:8px;outline:none;
+  }
+  .glow-btn{
+    background:linear-gradient(90deg,var(--neon),#7b00ff);
+    border:none;color:white;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 0 30px rgba(255,0,200,0.15);
+  }
+  .row{display:flex;gap:10px}
+  .slot-wrap{display:flex;align-items:center;gap:18px;justify-content:center;padding:10px}
+  .machine{width:320px;height:160px;border-radius:12px;background:linear-gradient(180deg,#120022,#040014);display:flex;align-items:center;justify-content:center;gap:12px;padding:12px;border:3px solid rgba(255,0,200,0.12);box-shadow:0 6px 30px rgba(255,0,200,0.06) inset}
+  .reel{width:86px;height:120px;border-radius:8px;overflow:hidden;background:#000;border:3px solid rgba(255,255,255,0.04);position:relative}
+  .symbols{position:absolute;left:0;top:0;width:100%}
+  .symbol{height:120px;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1}
+  .controls{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px}
+
+  .bets{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.03);cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
+  .chip.active{background:linear-gradient(90deg,var(--accent),#00aaff);color:#000;font-weight:700}
+
+  .notice{font-size:13px;color:#ddd;opacity:0.9}
+  .right .card{margin-bottom:12px}
+
+  /* flashy lights */
+  .lights{position:relative;margin-top:12px;height:8px;background:linear-gradient(90deg,#ff00f7, #00ffd5);border-radius:8px;box-shadow:0 0 25px rgba(255,0,200,0.25)}
+  #resultMsg{margin-top:10px;text-align:center;font-size:18px;color:var(--neon);text-shadow:0 0 12px rgba(255,0,200,0.12)}
+
+  /* coin animation */
+  .coin{
+    position:fixed;pointer-events:none;font-size:22px;z-index:9999;opacity:0;transition:transform 900ms cubic-bezier(.2,.9,.2,1),opacity 400ms;
+  }
+
+  /* casino footer */
+  footer{margin-top:22px;text-align:center;opacity:0.8;font-size:13px}
+  .small{font-size:12px;opacity:0.75}
+
+  /* responsive */
+  @media (max-width:900px){
+    .container{grid-template-columns:1fr; padding-bottom:30px}
+    .right{order:2}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎰 MEGA CASINO RP (FIKTIF)</h1>
+  <div class="balance">
+    <div class="title">Saldo (Rp)</div>
+    <div class="amt" id="saldo">Rp 0</div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="left">
+    <!-- Deposit / Withdraw -->
+    <div class="panel section">
+      <div class="title">💳 Deposit & Withdraw (Fiktif)</div>
+      <input id="depositInput" type="number" placeholder="Masukkan nominal deposit (Rp)" min="0" />
+      <div class="row">
+        <button class="glow-btn" onclick="doDeposit()">Deposit (Rp)</button>
+        <button class="glow-btn" onclick="doWithdraw()" style="background:linear-gradient(90deg,#ff6b6b,#ff3b3b)">Withdraw (Fiktif)</button>
+      </div>
+      <div class="notice">Semua transaksi fiktif. Jangan gunakan uang asli.</div>
+    </div>
+
+    <!-- Slot machine -->
+    <div class="panel section">
+      <div class="title">🎰 Slot Machine (3-reel) — Pakai Rp</div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <div style="flex:1">
+          <label class="small">Taruhan per Spin (RP)</label>
+          <input id="betAmount" type="number" value="1000" min="100" step="100" />
+        </div>
+        <div style="width:160px">
+          <label class="small">Auto-Spin</label>
+          <select id="autoSelect">
+            <option value="0">Off</option>
+            <option value="5">5x</option>
+            <option value="10">10x</option>
+            <option value="999">Turbo (until stop)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="machine" id="slotMachine">
+        <div class="reel"><div class="symbols" id="s1"></div></div>
+        <div class="reel"><div class="symbols" id="s2"></div></div>
+        <div class="reel"><div class="symbols" id="s3"></div></div>
+      </div>
+
+      <div class="controls">
+        <button class="glow-btn" onclick="pullLever()">TARIK TUAS / SPIN</button>
+        <button class="glow-btn" onclick="stopAuto()" style="background:linear-gradient(90deg,#ffb86b,#ff8b00)">STOP</button>
+      </div>
+
+      <div class="lights" id="lights"></div>
+      <div id="resultMsg"></div>
+      <div class="small" style="margin-top:8px">Atur <b>Taruhan</b> sesuai saldo kamu. Minimal 100.</div>
+    </div>
+
+    <!-- Togel -->
+    <div class="panel section">
+      <div class="title">🔢 Togel 4D (Random)</div>
+      <div style="display:flex;gap:8px">
+        <button class="glow-btn" onclick="generateTogel()">Generate Nomor</button>
+        <div style="align-self:center;margin-left:6px" id="togelRes">-</div>
+      </div>
+    </div>
+
+    <!-- Footer / Disclaimer -->
+    <div class="panel section small">
+      <div><strong>DISCLAIMER:</strong> Ini adalah permainan simulasi fiktif untuk hiburan. Tidak ada uang nyata yang dipertaruhkan atau dibayarkan. Jangan gunakan ini untuk aktivitas perjudian nyata.</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <!-- Odds / Quick bet chips -->
+    <div class="panel card">
+      <div class="title">🎯 Pilihan Cepat Taruhan</div>
+      <div class="bets" id="chips">
+        <div class="chip" onclick="setBet(1000)">Rp 1.000</div>
+        <div class="chip" onclick="setBet(5000)">Rp 5.000</div>
+        <div class="chip" onclick="setBet(10000)">Rp 10.000</div>
+        <div class="chip" onclick="setBet(50000)">Rp 50.000</div>
+        <div class="chip" onclick="setBet(100000)">Rp 100.000</div>
+      </div>
+      <div class="small" style="margin-top:8px">Klik chip untuk mengubah taruhan per spin.</div>
+    </div>
+
+    <!-- Judi Bola -->
+    <div class="panel card">
+      <div class="title">⚽ Judi Bola (Fiktif)</div>
+      <div>
+        <label class="small">Pilih Pertandingan</label>
+        <select id="matchSelect" onchange="refreshOdds()">
+          <option value="M1">M1: Merah FC vs Biru United</option>
+          <option value="M2">M2: Selatan City vs Utara FC</option>
+          <option value="M3">M3: Tim A vs Tim B</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="small">Pilih Hasil</label>
+        <select id="pick">
+          <option value="home">Home Win</option>
+          <option value="draw">Draw</option>
+          <option value="away">Away Win</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="small">Stake (Rp)</label>
+        <input id="stake" type="number" value="5000" min="100" />
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button class="glow-btn" onclick="placeBet()">Pasang Taruhan</button>
+        <div style="margin-left:12px">
+          <div class="small">Odds saat ini:</div>
+          <div id="oddsDisplay" style="font-weight:700">-</div>
+        </div>
+      </div>
+
+      <div class="small" style="margin-top:8px">Odds di-generate acak tapi wajar; hasil pertandingan juga acak (fair simulated).</div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="panel card">
+      <div class="title">📜 Aktivitas Terakhir</div>
+      <div id="log" class="small" style="max-height:240px;overflow:auto"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="small">Dibuat untuk hiburan — SIMULATOR FIKTIF. Jangan gunakan uang nyata.</div>
+</footer>
+
+<!-- coin element used for animation -->
+<div id="coinLayer"></div>
+
+<!-- sounds -->
+<audio id="spinSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="reelSound" src="https://actions.google.com/sounds/v1/cartoon/metal_thunk.ogg"></audio>
+<audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="coinSound" src="https://actions.google.com/sounds/v1/coins/coins_in_piggy_bank.ogg"></audio>
+
+<script>
+/* -------------------------
+   Utility & initial
+   ------------------------- */
+let saldo = 0;
+const simbols = ["🍒","🔔","⭐","🍋","7️⃣","🍉","💎"];
+const s1 = document.getElementById('s1');
+const s2 = document.getElementById('s2');
+const s3 = document.getElementById('s3');
+let autoTimer = null;
+let autoRemaining = 0;
+
+function fmtRp(n){
+  if(!n && n !== 0) return 'Rp 0';
+  return 'Rp ' + n.toLocaleString('id-ID');
+}
+function updateSaldoUI(){ document.getElementById('saldo').innerText = fmtRp(saldo); }
+function log(msg){
+  const el = document.getElementById('log');
+  const now = new Date();
+  el.innerHTML = `<div>[${now.toLocaleTimeString()}] ${msg}</div>` + el.innerHTML;
+}
+
+/* -------------------------
+   Deposit / Withdraw (fiktif)
+   ------------------------- */
+function doDeposit(){
+  const v = parseInt(document.getElementById('depositInput').value) || 0;
+  if(v <= 0){ alert('Masukkan nominal deposit yang benar.'); return; }
+  saldo += v;
+  updateSaldoUI();
+  log(`Deposit ${fmtRp(v)} (fiktif)`);
+}
+function doWithdraw(){
+  const v = parseInt(document.getElementById('depositInput').value) || 0;
+  if(v <= 0 || v > saldo){ alert('Nominal tidak valid / saldo tidak cukup.'); return; }
+  saldo -= v;
+  updateSaldoUI();
+  log(`Withdraw ${fmtRp(v)} (fiktif)`);
+}
+
+/* -------------------------
+   Build reels
+   ------------------------- */
+function fillReel(div){
+  let html = '';
+  for(let i=0;i<20;i++){
+    const sym = simbols[Math.floor(Math.random()*simbols.length)];
+    html += `<div class="symbol">${sym}</div>`;
+  }
+  div.innerHTML = html;
+}
+fillReel(s1); fillReel(s2); fillReel(s3);
+
+/* -------------------------
+   Slot spin animations
+   ------------------------- */
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+async function animateReel(div, duration){
+  return new Promise(resolve=>{
+    const dist = randInt(700,1400);
+    div.style.transition = `transform ${duration}ms cubic-bezier(.22,.9,.3,1)`;
+    div.style.transform = `translateY(-${dist}px)`;
+    // play quick reel sound once
+    document.getElementById('reelSound').currentTime = 0; document.getElementById('reelSound').play();
+    setTimeout(()=>{
+      // reset
+      div.style.transition = '';
+      div.style.transform = 'translateY(0px)';
+      // refill so next spin random
+      fillReel(div);
+      resolve();
+    }, duration);
+  });
+}
+
+function playWinEffects(amount){
+  document.getElementById('winSound').currentTime=0; document.getElementById('winSound').play();
+  // coin animation
+  spawnCoins(8);
+  document.getElementById('coinSound').currentTime=0; document.getElementById('coinSound').play();
+  log(`Menang ${fmtRp(amount)}!`);
+}
+
+/* pull lever */
+async function pullLever(){
+  let bet = parseInt(document.getElementById('betAmount').value)||100;
+  if(bet < 100) { alert('Taruhan minimal Rp 100'); return; }
+  if(saldo < bet){ alert('Saldo tidak cukup. Silakan deposit.'); return; }
+
+  // Deduct bet
+  saldo -= bet; updateSaldoUI();
+  log(`Spin taruhan ${fmtRp(bet)}`);
+
+  document.getElementById('resultMsg').innerText = 'Berputar...';
+  document.getElementById('spinSound').currentTime=0; document.getElementById('spinSound').play();
+
+  // fill reels for visual
+  fillReel(s1); fillReel(s2); fillReel(s3);
+
+  // animate reels sequentially like real slot
+  await animateReel(s1, 900);
+  await animateReel(s2, 1200);
+  await animateReel(s3, 1500);
+
+  // Determine displayed symbol: take first child of each after fill
+  const r1 = s1.children[0].innerText;
+  const r2 = s2.children[0].innerText;
+  const r3 = s3.children[0].innerText;
+
+  // Determine payout
+  let payout = 0;
+  if(r1 === r2 && r2 === r3){
+    // triple
+    payout = bet * 10; // x10
+    saldo += payout;
+    document.getElementById('resultMsg').innerText = `💎 JACKPOT! ${fmtRp(payout)}`;
+    playWinEffects(payout);
+  } else if(r1 === r2 || r2 === r3 || r1 === r3){
+    payout = bet * 3; // x3
+    saldo += payout;
+    document.getElementById('resultMsg').innerText = `✨ Double! ${fmtRp(payout)}`;
+    playWinEffects(payout);
+  } else {
+    document.getElementById('resultMsg').innerText = `😞 Tidak beruntung`;
+    log(`Kalah ${fmtRp(bet)}`);
+  }
+  updateSaldoUI();
+
+  // auto-spin logic
+  const autoVal = parseInt(document.getElementById('autoSelect').value);
+  if(autoVal>0){
+    if(autoVal === 999){
+      // turbo until stopAuto called, but ensure tiny delay
+      autoTimer = setTimeout(()=> pullLever(), 200);
+    } else {
+      autoRemaining = autoVal - 1;
+      if(autoRemaining>0){
+        autoTimer = setTimeout(()=> pullLever(), 600);
+      } else {
+        autoRemaining = 0;
+      }
+    }
+  }
+}
+
+/* Stop auto */
+function stopAuto(){
+  if(autoTimer) clearTimeout(autoTimer);
+  autoTimer = null; autoRemaining = 0;
+  document.getElementById('resultMsg').innerText = 'Auto stopped';
+}
+
+/* -------------------------
+   Quick chips
+   ------------------------- */
+function setBet(v){
+  document.getElementById('betAmount').value = v;
+  // UI highlight chip
+  document.querySelectorAll('.chip').forEach(c=> c.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+/* -------------------------
+   Togel generator
+   ------------------------- */
+function generateTogel(){
+  const num = Math.floor(Math.random()*9000)+1000;
+  document.getElementById('togelRes').innerText = num;
+  log(`Togel generate: ${num}`);
+}
+
+/* -------------------------
+   Coin animation
+   ------------------------- */
+function spawnCoins(n){
+  const layer = document.getElementById('coinLayer');
+  for(let i=0;i<n;i++){
+    const el = document.createElement('div');
+    el.className='coin';
+    el.innerText='🪙';
+    document.body.appendChild(el);
+    const startX = window.innerWidth/2 + (Math.random()*200-100);
+    const startY = window.innerHeight/2;
+    el.style.left = startX + 'px';
+    el.style.top = startY + 'px';
+    // animate
+    requestAnimationFrame(()=>{
+      el.style.opacity = 1;
+      const tx = startX + (Math.random()*160-80);
+      const ty = startY - (400 + Math.random()*200);
+      el.style.transform = `translate(${tx-startX}px, ${ty-startY}px) scale(${1+Math.random()})`;
+    });
+    setTimeout(()=>{ el.style.opacity=0; setTimeout(()=> el.remove(),1000); }, 900);
+  }
+}
+
+/* -------------------------
+   Judi Bola (simulated)
+   ------------------------- */
+const matches = {
+  M1:{home:'Merah FC',away:'Biru United'},
+  M2:{home:'Selatan City',away:'Utara FC'},
+  M3:{home:'Tim A',away:'Tim B'}
+};
+let currentOdds = {home:2.0,draw:3.2,away:2.5};
+
+function refreshOdds(){
+  const m = document.getElementById('matchSelect').value;
+  // generate plausible odds based on random base
+  const base = 1 + Math.random()*2; // between 1 and 3
+  const home = +(base + Math.random()).toFixed(2);
+  const away = +(base + Math.random()).toFixed(2);
+  const draw = +(1 + Math.random() * (Math.max(home,away))).toFixed(2);
+  currentOdds = {home,draw,away};
+  document.getElementById('oddsDisplay').innerText = `Home ${home} • Draw ${draw} • Away ${away}`;
+}
+refreshOdds();
+
+function placeBet(){
+  const pick = document.getElementById('pick').value;
+  const stake = parseInt(document.getElementById('stake').value) || 0;
+  if(stake <= 0){ alert('Masukkan stake yang benar'); return; }
+  if(stake > saldo){ alert('Saldo tidak cukup'); return; }
+
+  const odds = currentOdds[pick];
+  // Deduct stake now
+  saldo -= stake; updateSaldoUI();
+  log(`Taruhan bola ${fmtRp(stake)} pada ${pick} (odds ${odds})`);
+
+  // simulate match result after small delay
+  document.getElementById('resultMsg').innerText = 'Pertandingan berjalan...';
+  setTimeout(()=>{
+    // result random weighted by odds (lower odds => favorite -> slightly higher chance)
+    const weightHome = 1/currentOdds.home;
+    const weightAway = 1/currentOdds.away;
+    const weightDraw = 1/currentOdds.draw;
+    const sum = weightHome + weightDraw + weightAway;
+    const pickRand = Math.random() * sum;
+    let outcome = 'home';
+    if(pickRand < weightHome) outcome = 'home';
+    else if(pickRand < weightHome + weightDraw) outcome = 'draw';
+    else outcome = 'away';
+
+    if(outcome === pick){
+      const payout = Math.floor(stake * odds);
+      saldo += payout;
+      updateSaldoUI();
+      document.getElementById('resultMsg').innerText = `🎉 Kamu menang! Hasil: ${outcome.toUpperCase()} • Dapat ${fmtRp(payout)}`;
+      playWinEffects(payout);
+    } else {
+      document.getElementById('resultMsg').innerText = `❌ Kalah. Hasil: ${outcome.toUpperCase()} • Hilang ${fmtRp(stake)}`;
+      log(`Taruhan bola kalah ${fmtRp(stake)}. Hasil: ${outcome}`);
+    }
+    // refresh odds for next match
+    refreshOdds();
+  }, 1500);
+}
+
+/* -------------------------
+   Init
+   ------------------------- */
+updateSaldoUI();
+document.getElementById('oddsDisplay').innerText = '-';
+
+// accessibility: allow Enter to deposit
+document.getElementById('depositInput').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') doDeposit();
+});
+</script>
+
+</body>
+</html>

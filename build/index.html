@@ -1,0 +1,335 @@
+<!doctype html>
+
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Demo Trading — UI Mirip Exchange Nyata</title>
+  <!--
+    Versi upgrade: UI yang lebih mirip exchange nyata (front-end only)
+    - Layout 3 kolom: chart besar (kiri), orderbook & depth (tengah), trading panel & history (kanan)
+    - Orderbook ter-agg (level), depth chart, chart candle (mocked using line), limit & market order
+    - Matching engine simulated: order limit yang cocok langsung diisi; pasar matching terhadap orderbook
+    - Masih: TIDAK ADA backend / TIDAK MELAKUKAN trading nyata
+  -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <style>
+    :root{--bg:#071226;--card:#071827;--muted:#9aa6b2;--accent:#06b6d4}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0;background:linear-gradient(180deg,#041023 0%, #07122a 100%);color:#e6eef6}
+    .container{max-width:1300px;margin:18px auto;padding:12px;display:grid;grid-template-columns:1fr 420px;gap:12px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+    .brand{display:flex;align-items:center;gap:8px}
+    .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(90deg,#06b6d4,#06b78f);display:flex;align-items:center;justify-content:center;font-weight:800}
+    h1{margin:0;font-size:16px}
+    .main{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:12px;border-radius:10px}
+    .leftCol{display:grid;grid-template-rows:auto 360px;gap:12px}
+    #chart{height:360px}
+    .midCol{display:grid;grid-template-rows:220px 140px;gap:12px}
+    .orderbook{display:flex;gap:8px}
+    .bookSide{flex:1;overflow:auto;height:220px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:6px 4px;text-align:right}
+    th{color:var(--muted);font-weight:600}
+    .buy{color:#10b981}
+    .sell{color:#ef4444}
+    .tradeRow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.02)}
+    .controls{display:flex;flex-direction:column;gap:8px}
+    input,select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .tabs{display:flex;gap:8px}
+    .tab{padding:8px 10px;border-radius:8px;cursor:pointer}
+    .tab.active{background:rgba(255,255,255,0.03)}
+    .btn{padding:10px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    .buyBtn{background:linear-gradient(90deg,#06b6d4,#06b78f);color:#001219}
+    .sellBtn{background:linear-gradient(90deg,#ef4444,#fb7185);color:#fff}
+    .small{font-size:12px;color:var(--muted)}
+    .rightCol{display:flex;flex-direction:column;gap:12px}
+    .history{max-height:220px;overflow:auto}
+    footer{margin-top:10px;color:var(--muted);font-size:12px}
+    @media (max-width:1100px){.container{grid-template-columns:1fr;padding:8px}.main{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div>
+      <header>
+        <div class="brand">
+          <div class="logo">EX</div>
+          <div>
+            <h1>Demo Exchange — BTC / USD (Front-end Mirror)</h1>
+            <div class="small">UI lebih mirip exchange nyata. Tetap simulasi.</div>
+          </div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div id="topPrice" style="font-weight:800;font-size:18px">Memuat...</div>
+          <div class="small" id="topChange">-</div>
+        </div>
+      </header><div class="main">
+    <div class="leftCol">
+      <div class="panel">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="font-weight:700">Chart (Candles - simulated)</div>
+          <div class="small">Interval: <select id="interval"><option>1m</option><option>5m</option><option>1h</option></select></div>
+          <div style="margin-left:auto" class="small">Volume (mock)</div>
+        </div>
+        <div id="chart" style="margin-top:10px"><canvas id="priceChart"></canvas></div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="font-weight:700">Order Book & Depth</div>
+          <div class="small" style="margin-left:auto">Orderbook simulated sekitar market price</div>
+        </div>
+        <div class="orderbook" style="margin-top:8px">
+          <div class="bookSide panel" style="padding:8px">
+            <div class="small">Asks (sell)</div>
+            <table><thead><tr><th style="text-align:left">Price</th><th>Size</th></tr></thead><tbody id="asks"></tbody></table>
+          </div>
+          <div class="bookSide panel" style="padding:8px">
+            <div class="small">Bids (buy)</div>
+            <table><thead><tr><th style="text-align:left">Price</th><th>Size</th></tr></thead><tbody id="bids"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightCol">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+          <div style="font-weight:700">Trading Panel</div>
+          <div class="small">Wallet mock • USD & BTC</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:10px">
+          <div>
+            <div class="small">USD</div>
+            <div id="walletUSD">10,000.00</div>
+          </div>
+          <div>
+            <div class="small">BTC</div>
+            <div id="walletBTC">0.000000</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="tabs">
+            <div class="tab active" id="tabLimit">Limit</div>
+            <div class="tab" id="tabMarket">Market</div>
+          </div>
+
+          <div id="limitBox" style="margin-top:8px">
+            <div class="controls">
+              <select id="side"><option value="buy">Buy</option><option value="sell">Sell</option></select>
+              <input id="priceInput" placeholder="Price (USD)" type="number" step="0.01">
+              <input id="amountInput" placeholder="Amount (BTC)" type="number" step="0.0001">
+              <div style="display:flex;gap:8px">
+                <button class="btn buyBtn" id="placeLimit">Place Limit</button>
+                <button class="btn" id="cancelAll">Cancel All</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="marketBox" style="display:none;margin-top:8px">
+            <div class="controls">
+              <select id="mSide"><option value="buy">Market Buy</option><option value="sell">Market Sell</option></select>
+              <input id="mAmount" placeholder="Amount (BTC)" type="number" step="0.0001">
+              <div style="display:flex;gap:8px"><button class="btn buyBtn" id="marketExec">Execute Market</button></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Open Orders</div><div class="small">Simulated</div></div>
+        <div id="openOrders" style="margin-top:8px;max-height:160px;overflow:auto"></div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight:700">Trade History</div>
+        <div id="tradeHistory" class="history" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Versi ini meniru UI exchange asli: orderbook ter-agg, limit/market order, matching immediate jika price cocok. Masih hanya sisi client (no API keys/no money).</footer>
+</div>
+
+  </div>  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <script>
+    // ---------- CONFIG & STATE ----------
+    const POLL = 4000; // ms fetch simulated
+    let lastPrice = 0;
+    let chart = null;
+    let chartData = {labels:[], datasets:[{label:'Price',data:[]}]};
+    let openOrders = [];
+    let tradeHistory = [];
+    let wallet = {usd:10000.00, btc:0.0};
+
+    // ---------- HELPERS ----------
+    const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+    const now = ()=>new Date().toLocaleTimeString();
+
+    // ---------- CHART ----------
+    function initChart(){
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      chart = new Chart(ctx,{type:'line',data:chartData,options:{plugins:{legend:{display:false}},scales:{x:{display:false}}}});
+    }
+
+    // ---------- SIMULATED PRICE SOURCE (uses CoinGecko for realism when available) ----------
+    async function seedPrice(){
+      try{
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+        if(res.ok){ const j=await res.json(); lastPrice = j.bitcoin.usd; }
+      }catch(e){ console.warn('CoinGecko fail, fallback'); lastPrice = 60000 + Math.random()*2000; }
+      // bootstrap chart
+      for(let i=0;i<40;i++){ chartData.labels.push(''); chartData.datasets[0].data.push(lastPrice + (Math.random()-0.5)*200); }
+      chart.update(); renderTop(); renderBook();
+    }
+
+    function tickPrice(){
+      // random walk
+      lastPrice = lastPrice * (1 + (Math.random()-0.5)/500);
+      chartData.labels.push(now()); chartData.datasets[0].data.push(lastPrice);
+      if(chartData.labels.length>120){ chartData.labels.shift(); chartData.datasets[0].data.shift(); }
+      chart.update(); renderTop(); renderBook();
+    }
+
+    // ---------- ORDERBOOK (aggregated levels around lastPrice) ----------
+    function genBook(center,levels=12,step=0.15){
+      const asks = [], bids = [];
+      for(let i=1;i<=levels;i++){
+        const factor = 1 + i*step/100;
+        asks.push({price: +(center*factor).toFixed(2), size: +(Math.random()*0.8+0.01).toFixed(4)});
+        bids.push({price: +(center/(factor)).toFixed(2), size: +(Math.random()*0.8+0.01).toFixed(4)});
+      }
+      asks.sort((a,b)=>a.price-b.price);
+      bids.sort((a,b)=>b.price-a.price);
+      return {asks,bids};
+    }
+
+    function renderBook(){
+      const {asks,bids} = genBook(lastPrice);
+      const asksEl = document.getElementById('asks'); const bidsEl = document.getElementById('bids');
+      asksEl.innerHTML=''; bidsEl.innerHTML='';
+      asks.forEach(a=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td style="text-align:left;color:#ef4444">$${fmt(a.price,2)}</td><td>${fmt(a.size,4)}</td>`; asksEl.appendChild(tr);});
+      bids.forEach(b=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td style="text-align:left;color:#10b981">$${fmt(b.price,2)}</td><td>${fmt(b.size,4)}</td>`; bidsEl.appendChild(tr);});
+    }
+
+    // ---------- RENDER TOP (price + change) ----------
+    let lastTop = null;
+    function renderTop(){
+      const el = document.getElementById('topPrice'); const ch = document.getElementById('topChange');
+      if(lastTop!==null){ const diff = lastPrice - lastTop; const pct = diff/lastTop*100; ch.textContent = (diff>=0?'+':'')+fmt(diff,2)+' ('+fmt(pct,2)+'%)'; ch.style.color = diff>=0? '#10b981':'#ef4444'; }
+      lastTop = lastPrice; el.textContent = '$' + fmt(lastPrice,2);
+    }
+
+    // ---------- ORDERS (simulated matching) ----------
+    function placeLimit(side,price,amount){
+      const id = 'o'+Date.now();
+      const order = {id,side,price,amount,status:'open',time:now()};
+      // immediate match if crosses
+      if((side==='buy' && price >= lastPrice) || (side==='sell' && price <= lastPrice)){
+        // filled
+        order.status='filled'; order.filled=amount; tradeExecuted(side,price,amount);
+      } else {
+        openOrders.unshift(order);
+      }
+      renderOrders(); renderWallet(); renderHistory();
+    }
+
+    function executeMarket(side,amount){
+      // match against simulated book sizes: approximate using lastPrice
+      const price = lastPrice * (1 + (Math.random()-0.5)/200);
+      tradeExecuted(side, price, amount);
+      renderOrders(); renderWallet(); renderHistory();
+    }
+
+    function tradeExecuted(side,price,amount){
+      // update wallets
+      const total = price * amount;
+      if(side==='buy'){
+        if(wallet.usd >= total){ wallet.usd -= total; wallet.btc += amount; }
+      } else {
+        if(wallet.btc >= amount){ wallet.btc -= amount; wallet.usd += total; }
+      }
+      // record trade
+      tradeHistory.unshift({side,price,amount,time:now()});
+      // keep last 200
+      if(tradeHistory.length>200) tradeHistory.pop();
+    }
+
+    function cancelAll(){ openOrders=[]; renderOrders(); }
+
+    // ---------- RENDER UI PARTS ----------
+    function renderOrders(){ const el=document.getElementById('openOrders'); el.innerHTML=''; openOrders.forEach(o=>{ const d=document.createElement('div'); d.style.padding='8px 0'; d.style.borderBottom='1px solid rgba(255,255,255,0.02)'; d.innerHTML=`<div style=\"display:flex;justify-content:space-between\"><div class=\"small\">${o.time} • ${o.side.toUpperCase()}</div><div style=\"font-weight:700\">${fmt(o.amount,4)} BTC</div></div><div class=\"small\">@ $${fmt(o.price,2)} • ${o.status}</div>`; el.appendChild(d); }); }
+    function renderHistory(){ const el=document.getElementById('tradeHistory'); el.innerHTML=''; tradeHistory.slice(0,200).forEach(t=>{ const d=document.createElement('div'); d.className='tradeRow'; d.innerHTML = `<div class=\"small\">${t.time}</div><div style=\"font-weight:700\">${fmt(t.amount,4)} BTC</div><div style=\"color:${t.side==='buy'? '#10b981':'#ef4444'}\">$${fmt(t.price,2)}</div>`; el.appendChild(d); }); }
+    function renderWallet(){ document.getElementById('walletUSD').textContent = fmt(wallet.usd,2); document.getElementById('walletBTC').textContent = wallet.btc.toFixed(6); }
+
+    // ---------- UI HOOKS ----------
+    document.getElementById('placeLimit').addEventListener('click',()=>{
+      const side = document.getElementById('side').value;
+      const price = parseFloat(document.getElementById('priceInput').value);
+      const amount = parseFloat(document.getElementById('amountInput').value);
+      const info = document.getElementById('orderInfo');
+      if(!price || !amount) return alert('Isi price dan amount');
+      // basic balance check
+      if(side==='buy' && wallet.usd < price*amount) return alert('Saldo USD tidak cukup');
+      if(side==='sell' && wallet.btc < amount) return alert('Saldo BTC tidak cukup');
+      placeLimit(side,price,amount);
+      document.getElementById('priceInput').value=''; document.getElementById('amountInput').value='';
+    });
+
+    document.getElementById('marketExec').addEventListener('click',()=>{
+      const side = document.getElementById('mSide').value.includes('Buy')? 'buy':'sell';
+      const amount = parseFloat(document.getElementById('mAmount').value);
+      if(!amount) return alert('Isi amount');
+      // quick balance check
+      if(side==='buy' && wallet.usd < lastPrice*amount) return alert('Saldo USD tidak cukup');
+      if(side==='sell' && wallet.btc < amount) return alert('Saldo BTC tidak cukup');
+      executeMarket(side,amount);
+      document.getElementById('mAmount').value='';
+    });
+
+    document.getElementById('cancelAll').addEventListener('click',()=>{ cancelAll(); });
+
+    // tabs
+    document.getElementById('tabLimit').addEventListener('click',()=>{ document.getElementById('limitBox').style.display=''; document.getElementById('marketBox').style.display='none'; document.getElementById('tabLimit').classList.add('active'); document.getElementById('tabMarket').classList.remove('active'); });
+    document.getElementById('tabMarket').addEventListener('click',()=>{ document.getElementById('limitBox').style.display='none'; document.getElementById('marketBox').style.display=''; document.getElementById('tabMarket').classList.add('active'); document.getElementById('tabLimit').classList.remove('active'); });
+
+    // ---------- BOOT ----------
+    initChart(); seedPrice().then(()=>{
+      renderWallet(); renderOrders(); renderHistory();
+      setInterval(()=>{ tickPrice(); }, POLL);
+      setInterval(()=>{ // simulate random trades
+        if(Math.random()>0.6){ const s = Math.random()>0.5?'buy':'sell'; const sz = +(Math.random()*0.02+0.0005).toFixed(4); tradeExecuted(s, lastPrice*(1+(Math.random()-0.5)/300), sz); renderHistory(); renderWallet(); }
+      }, 2500);
+    });
+
+  </script>  <!-- Deposit Modal -->  <div id="depositModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; width:320px; border-radius:12px; text-align:center;">
+      <h2>Deposit</h2>
+      <p>Masukkan jumlah deposit (IDR):</p>
+      <input id="depositAmount" type="number" style="width:90%; padding:8px; margin-top:8px; border-radius:6px; border:1px solid #ccc;">
+      <br/><br/>
+      <button onclick="submitDeposit()" style="padding:8px 16px; border:none; background:#238636; color:white; border-radius:6px; cursor:pointer;">Deposit</button>
+      <button onclick="closeDeposit()" style="padding:8px 16px; border:none; background:#555; color:white; border-radius:6px; cursor:pointer; margin-left:8px;">Batal</button>
+    </div>
+  </div>  <script>
+    const saldoEl = document.getElementById('saldo');
+    let saldoUser = 0;
+
+    function openDeposit() {
+      document.getElementById('depositModal').style.display = 'flex';
+    }
+    function closeDeposit() {
+      document.getElementById('depositModal').style.display = 'none';
+    }
+    function submitDeposit() {
+      const amount = parseInt(document.getElementById('depositAmount').value);
+      if (!amount || amount <= 0) return alert('Jumlah tidak valid');
+      saldoUser += amount;
+      saldoEl.textContent = saldoUser.toLocaleString();
+      closeDeposit();
+    }
+  </script></body>
+</html>
